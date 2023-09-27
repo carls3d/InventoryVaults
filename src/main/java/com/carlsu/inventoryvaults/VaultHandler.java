@@ -1,9 +1,10 @@
 package com.carlsu.inventoryvaults;
 
-import java.util.Set;
+import org.slf4j.Logger;
 
-import com.carlsu.inventoryvaults.commands.VaultCommands;
 import com.carlsu.inventoryvaults.util.VaultsData;
+import com.carlsu.inventoryvaults.world.dimension.ModDimension;
+import com.mojang.logging.LogUtils;
 
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
@@ -15,163 +16,185 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.CommandStorage;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class VaultHandler {
-    public static final Set<String> VAULT_FILTER = VaultsData.VAULT_FILTER;
-    private static final String VAULT_NAME = VaultsData.VAULT_NAME;
-    private static final String DEFAULT_VAULT = VaultsData.DEFAULT_VAULT;
+    static final Logger LOGGER = LogUtils.getLogger();
 
-    public static void saveVault(Player player) {
-        saveVault(player, DEFAULT_VAULT);
-    }
     public static void saveVault(Player player, String vaultKey) {
-        CompoundTag playerVault = serializeVault(player);
-        CompoundTag ForgeData = player.getPersistentData();
-        CompoundTag inventoryVault = ForgeData.copy().getCompound(VAULT_NAME);
-        inventoryVault.put(vaultKey, playerVault);
-        ForgeData.put(VAULT_NAME, inventoryVault);
+        saveVault(player, vaultKey, null);}
+    public static void saveVault(Player player, String vaultKey, CompoundTag locationData) {
+        CompoundTag filteredData = serializeVault(player);
+        if (locationData != null) {
+            filteredData.put("Pos", locationData.get("Pos"));
+            filteredData.put("Rotation", locationData.get("Rotation"));
+            filteredData.put("Dimension", locationData.get("Dimension"));
+        }
+        
+        LOGGER.info("Saving vault: "+ vaultKey);
+        
+        CompoundTag forgeData = player.getPersistentData();
+        CompoundTag inventoryVaults = forgeData.getCompound(VaultsData.VAULT_NAME);
+        inventoryVaults.put(vaultKey, filteredData);
     }
 
-    public static void loadVault(Player player) {
-        loadVault(player, DEFAULT_VAULT, false);
-    }
+
+
     public static void loadVault(Player player, String vaultKey) {
-        loadVault(player, vaultKey, false);
-    }
+        loadVault(player, vaultKey, true);}
     public static void loadVault(Player player, String vaultKey, boolean changeDimension) {
         CompoundTag playerVault = getVault(player, vaultKey);
+        
+        // Abort if vault doesn't exist
         if (playerVault == null) {
-            return;
+            LOGGER.error(
+                "\nloadVault -> Vault doesn't exist"+ 
+                "\n\tName: "+ player.getName().getString() +" -> VaultKey: "+ vaultKey +"\n"); 
+            return; 
         }
-        // Inventory stuff
+
+        if (changeDimension) {
+            // If changing to or from creative dimension, only teleport player
+            ModDimension.CREATIVE_KEY.location();
+            // ResourceKey<Level> currentDimension = player.level.dimension();
+        }
+
+        LOGGER.info("\n\n"+player.getName().getString() +" Loading vault: "+ vaultKey+"\n");
+        
+        
+
+
+
+        // Inventory, EnderItems, ForgeCaps, ForgeData, Attributes
         player.load(playerVault);
+
         ServerPlayer serverPlayer = (ServerPlayer) player;
-        String dimension = playerVault.getString("Dimension");
 
         serverPlayer.setGameMode(GameType.byId(playerVault.getInt("playerGameType")));
-        // serverPlayer.setExperiencePoints(playerVault.getInt("XpP"));
-        // serverPlayer.setExperienceLevels(0);
         serverPlayer.setHealth(playerVault.getFloat("Health"));
         serverPlayer.getFoodData().setFoodLevel(playerVault.getInt("foodLevel"));
         serverPlayer.getFoodData().setSaturation(playerVault.getFloat("foodSaturationLevel"));
         serverPlayer.getFoodData().setExhaustion(playerVault.getFloat("foodExhaustionLevel"));
         serverPlayer.experienceLevel = playerVault.getInt("XpLevel");
         serverPlayer.experienceProgress = playerVault.getFloat("XpP");
-        
-
         ListTag pos = playerVault.getList("Pos", 6);
         ListTag rot = playerVault.getList("Rotation", 5);
-        if (pos.size() == 3 && rot.size() == 2) {
-            double x = pos.getDouble(0);
-            double y = pos.getDouble(1);
-            double z = pos.getDouble(2);
-            float rotationYaw = rot.getFloat(0);
-            float rotationPitch = rot.getFloat(1);
+        String dimension = playerVault.getString("Dimension");
+        
+        if (pos.size() != 3 || rot.size() != 2) {
+            LOGGER.error(
+                "\n\nloadVault -> "+player.getName().toString()+ " -> Invalid position & rotation"+
+                "\n\tPos: "+ pos.toString() +
+                "\n\tRot: "+ rot.toString() +
+                "\n");
+            return;
+        }
+        if (!changeDimension) {return;}
 
-            if (changeDimension && !dimension.isEmpty()) {
-                ResourceKey<Level> dimensionKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(dimension));
-                ServerLevel targetWorld = serverPlayer.getLevel().getServer().getLevel(dimensionKey);
-                if (targetWorld != null) {
-                    // Teleport the player
-                    serverPlayer.teleportTo(targetWorld, x, y, z, rotationYaw, rotationPitch);
-                } else {
-                    VaultCommands.sendFailure("Dimension not found");
-                }
+        if (!dimension.isEmpty()) {
+            ServerLevel targetWorld = getServerLevel(new ResourceLocation(dimension));
+            if (targetWorld != null) {
+                // Teleport the player
+                double x = pos.getDouble(0);
+                double y = pos.getDouble(1);
+                double z = pos.getDouble(2);
+                float rotYaw = rot.getFloat(0);
+                float rotPitch = rot.getFloat(1);
+                // serverPlayer.teleportTo(targetWorld, x, y, z, rotYaw, rotPitch);
+                serverPlayer.teleportTo(targetWorld, x, y, z, rotYaw, rotPitch);
+
             } else {
-                // serverPlayer.teleportTo(serverPlayer.getLevel(), x, y, z, rotationYaw, rotationPitch);
+                LOGGER.error(
+                    "\nloadVault -> Invalid dimension"+
+                    "\n\tDimension: "+ dimension +
+                    "\n");
             }
-        } else {
-            VaultCommands.sendFailure("Invalid position & rotation");
         }
     }
 
+    // Returns vault data if it exists
     private static CompoundTag getVault(Player player, String vaultKey) {
-        CompoundTag ForgeData = player.getPersistentData().copy();
-        if (ForgeData.getAllKeys().contains(VAULT_NAME) && ForgeData.getCompound(VAULT_NAME).contains(vaultKey)) {
-            return ForgeData.getCompound(VAULT_NAME).getCompound(vaultKey);
-            // if (ForgeData.getCompound(VAULT_NAME).contains(vaultKey)) {
-            //     return ForgeData.getCompound(VAULT_NAME).getCompound(vaultKey);
-            // } else {
-            //     // No vault with key vaultKey exists
-            //     return null;
-            // }
-        } else {
-            // No VAULT_NAME exists in ForgeData
-            return null;
-        }
-    }
-    // public static void deserializeVault(Player player, CompoundTag vault) {
-    //     player.load(vault);
-    // }
+        CompoundTag ForgeData = player.getPersistentData();
+        
+        // Create InventoryVaults if it doesn't exist
+        boolean vaultExists = ForgeData.contains(VaultsData.VAULT_NAME);
+        CompoundTag inventoryVault = vaultExists ? ForgeData.getCompound(VaultsData.VAULT_NAME) : new CompoundTag();
 
+        // Create empty vault if it doesn't exist
+        if (!inventoryVault.contains(vaultKey)) {
+            CompoundTag newVault = new CompoundTag();
+            inventoryVault.put(vaultKey, newVault);
+        } 
+
+        return inventoryVault.getCompound(vaultKey);
+    }
+
+    // Returns a copy of the player's data with only the keys we want
     public static CompoundTag serializeVault(Player player) {
-        // Returns a copy of the player's data with only the keys we want
         CompoundTag playerData = player.serializeNBT().copy();
-        // CompoundTag playerData = player.serializeNBT();
+        
+        // Store only the keys in VAULT_FILTER
         CompoundTag filteredData = new CompoundTag();
-        for (String key : VAULT_FILTER) {
+        for (String key : VaultsData.VAULT_FILTER) {
             if (playerData.contains(key)) {
                 filteredData.put(key, playerData.get(key));
             }
         }
-        // CompoundTag filteredDataForgeData = filteredData.getCompound("ForgeData");
-        // filteredDataForgeData.put(VAULT_NAME, filteredData.get(VAULT_NAME));
-
-        // filteredData.put("ForgeData", filteredDataForgeData);
         return filteredData;
     }
 
 
-
-
-
-
-
-
-    public static CompoundTag getVaultStorage(Player player) {
-        CompoundTag vaultData = getVaultStoragePath();
-        String playerName = player.getName().getString();
-        CompoundTag playerVault = (CompoundTag) vaultData.get(playerName);
-        return playerVault;
+    public static ServerLevel getServerLevel(ResourceLocation resourceLocation) {
+        ResourceKey<Level> dimensionKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
+        return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
     }
-    public static void setVaultStorage(Player player, String vaultKey) {
-        ResourceLocation vaultLoc = new ResourceLocation("minecraft", "vault");
-        CommandStorage commandStorage = ServerLifecycleHooks.getCurrentServer().getCommandStorage();
-        CompoundTag vaultData = commandStorage.get(vaultLoc);
-        String name = player.getName().getString();
-        vaultData.put(name, serializeVaultStorage(player));
-        // Tag vault = new CompoundTag().put(vaultKey, playerVault);
-        // vaultData.merge(playerVault);
-        // commandStorage.set(vaultLoc, vaultData);
-    }
-    public static void setVaultStorage(Player player) {
-        setVaultStorage(player, DEFAULT_VAULT);
-    }
-    public static CompoundTag serializeVaultStorage(Player player) {
-        CompoundTag playerData = player.serializeNBT().copy();
-        CompoundTag filteredData = new CompoundTag();
-        // { Health:20.0f, Hunger:20, XpP:6, ...}
-        for (String key : VAULT_FILTER) {
-            if (playerData.contains(key)) {
-                filteredData.put(key, playerData.get(key));
-            }
-        }
 
-        // {playername:{ Health:20.0f, Hunger:20, XpP:6, ...}}
-        String name = player.getName().getString();
-        CompoundTag playerVault = new CompoundTag();
-        playerVault.put(name, filteredData);
-        return playerVault;
-    }
-    public static CompoundTag getVaultStoragePath(String a, String b) {
-        ResourceLocation vaultLoc = new ResourceLocation(a, b);
-        CommandStorage commandStorage = ServerLifecycleHooks.getCurrentServer().getCommandStorage();
-        CompoundTag vaultData = commandStorage.get(vaultLoc);
-        return vaultData;
-    }
-    public static CompoundTag getVaultStoragePath() {
-        return getVaultStoragePath("minecraft", "vault");
-    }
+
+
+
+
+    // public static CompoundTag getVaultStorage(Player player) {
+    //     CompoundTag vaultData = getVaultStoragePath();
+    //     String playerName = player.getName().getString();
+    //     CompoundTag playerVault = (CompoundTag) vaultData.get(playerName);
+    //     return playerVault;
+    // }
+    // public static void setVaultStorage(Player player, String vaultKey) {
+    //     ResourceLocation vaultLoc = new ResourceLocation("minecraft", "vault");
+    //     CommandStorage commandStorage = ServerLifecycleHooks.getCurrentServer().getCommandStorage();
+    //     CompoundTag vaultData = commandStorage.get(vaultLoc);
+    //     String name = player.getName().getString();
+    //     vaultData.put(name, serializeVaultStorage(player));
+    //     // Tag vault = new CompoundTag().put(vaultKey, playerVault);
+    //     // vaultData.merge(playerVault);
+    //     // commandStorage.set(vaultLoc, vaultData);
+    // }
+    // public static void setVaultStorage(Player player) {
+    //     setVaultStorage(player, VaultsData.DEFAULT_VAULT);
+    // }
+    // public static CompoundTag serializeVaultStorage(Player player) {
+    //     CompoundTag playerData = player.serializeNBT().copy();
+    //     CompoundTag filteredData = new CompoundTag();
+    //     // { Health:20.0f, Hunger:20, XpP:6, ...}
+    //     for (String key : VaultsData.VAULT_FILTER) {
+    //         if (playerData.contains(key)) {
+    //             filteredData.put(key, playerData.get(key));
+    //         }
+    //     }
+
+    //     // {playername:{ Health:20.0f, Hunger:20, XpP:6, ...}}
+    //     String name = player.getName().getString();
+    //     CompoundTag playerVault = new CompoundTag();
+    //     playerVault.put(name, filteredData);
+    //     return playerVault;
+    // }
+    // public static CompoundTag getVaultStoragePath(String a, String b) {
+    //     ResourceLocation vaultLoc = new ResourceLocation(a, b);
+    //     CommandStorage commandStorage = ServerLifecycleHooks.getCurrentServer().getCommandStorage();
+    //     CompoundTag vaultData = commandStorage.get(vaultLoc);
+    //     return vaultData;
+    // }
+    // public static CompoundTag getVaultStoragePath() {
+    //     return getVaultStoragePath("minecraft", "vault");
+    // }
 }

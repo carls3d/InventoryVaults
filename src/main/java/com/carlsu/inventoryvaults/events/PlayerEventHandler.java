@@ -1,9 +1,14 @@
 package com.carlsu.inventoryvaults.events;
 
+import java.util.HashMap;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 
+import com.carlsu.inventoryvaults.VaultHandler;
 import com.carlsu.inventoryvaults.util.UpdateVaultEvent;
 import com.carlsu.inventoryvaults.util.VaultsData;
+import com.carlsu.inventoryvaults.world.dimension.ModDimension;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.nbt.CompoundTag;
@@ -11,10 +16,9 @@ import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -24,71 +28,72 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 @EventBusSubscriber
 public class PlayerEventHandler {
     // new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/test");
-    static final ResourceKey<Level> CREATIVE_LEVEL = VaultsData.CREATIVE_LEVEL;
     static final Logger LOGGER = LogUtils.getLogger();
     static final String VAULT_NAME = VaultsData.VAULT_NAME;
+
+    // Vaults
     static final String DEFAULT_VAULT = VaultsData.DEFAULT_VAULT;
-    static final String CREATIVE_VAULT = VaultsData.CREATIVE_VAULT;
+    static final String CREATIVE_VAULT = ModDimension.CREATIVE_VAULT;
+
+    // Dimensions
+    static final ResourceKey<Level> CREATIVE_KEY = ModDimension.CREATIVE_KEY;
     
-    
+    // Players that died in creative dimension -> respawn triggers load main vault
+    private static final HashMap<UUID, Boolean> mapDiedInCreativeDimension = new HashMap<>();
+    public static final HashMap<UUID, Boolean> mapRespawnInCreative = new HashMap<>();
+    public static final HashMap<UUID, Vec3> mapLastLocation = new HashMap<>();
+
+    // Custom on dimension change event
     @SubscribeEvent
     public static void onUpdateVaultEvent(UpdateVaultEvent event) {
-        String rot = event.getLastCapturedRot().x+", "+event.getLastCapturedRot().y;
-        LOGGER.info(
-            "\n\nUpdateVaultEvent:"+
-            "\n\tCurrent pos: "+ event.getCurrentPlayer().position().toString() +
-            "\n\tLast pos: "+ event.getLastCapturedPos().toString() +
-            "\n\tLast rot: "+ rot +
-            "\n\tLast dimension: "+ event.getLastCapturedDimension().location().getPath() +
-            "\n\tCurrent dimension: "+ event.getCurrentDimension().location().getPath() +
-            "\n"
-        );
-    }
+        LOGGER.info("UpdateVaultEvent");
 
-    @SubscribeEvent
-    public static void playerDeath(LivingDeathEvent event) {
-		if (event.getEntity() instanceof ServerPlayer sp) {
-            LOGGER.info(
-                "\n\nLivingDeathEvent:"+
-                "\n\tPlayer dim: "+ sp.getCommandSenderWorld().dimension().location().getPath()+
-                "\n\tPlayer pos: "+ sp.position().toString() +
-                "\n"
-            );
+        Player player = event.getPlayer();
+        CompoundTag lastLocationData = event.getLastLocationNBT();
+        
+        // Skip if player wants to respawn in creative dimension
+        if (mapDiedInCreativeDimension.getOrDefault(player.getUUID(), false)) {
+            LOGGER.info("Skip UpdateVaultEvent");
+            return;
+        }
+        
+
+        if (event.getLastCapturedDimension() == CREATIVE_KEY) {
+            fromCreativeDimension(player, false, lastLocationData);
+        } else if (event.getCurrentDimension() == CREATIVE_KEY) {
+            toCreativeDimension(player, false, lastLocationData);
         }
     }
 
+
+    
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
         String prevDimension = event.getOriginal().getCommandSenderWorld().dimension().location().getPath();
         String dimension = event.getPlayer().getCommandSenderWorld().dimension().location().getPath();
-        LOGGER.info(
-            "\n\nPlayerEvent.Clone:"+
-            "\n\tPrev: "+prevDimension+
-            "\n\tNew: "+dimension +
-            "\n"
-            );
+        LOGGER.info("PlayerEvent.Clone");
         
 
         // Check if the player is actually dying, not just changing dimensions
         if (event.isWasDeath()) {
             Player originalPlayer = event.getOriginal();
             Player respawnPlayer = event.getPlayer();
-
             
             CompoundTag originalForgeData = originalPlayer.getPersistentData(); // The original player entity that has died
             CompoundTag spawnForgeData = respawnPlayer.getPersistentData();     // The new player entity that will spawn
+            mapRespawnInCreative.putIfAbsent(originalPlayer.getUUID(), false);
 
             // Check if died in creative dimension -> Respawn in creative dimension or restore main vault on respawn
-            if (event.getOriginal().getCommandSenderWorld().dimension() == CREATIVE_LEVEL) {
-                LOGGER.info(
-                    "\n\nDied in creative dimension"+
-                    "\n\tOriginal player pos: "+originalPlayer.position().toString()+
-                    "\n\tNew player pos: "+respawnPlayer.position().toString()+
-                    "\n\toriginal isDeadOrDying: "+originalPlayer.isDeadOrDying()+
-                    "\n\trespawn isDeadOrDying: "+respawnPlayer.isDeadOrDying() +
-                    "\n"
-                );
-            } else {
+            if (event.getOriginal().getCommandSenderWorld().dimension() == CREATIVE_KEY) {
+                CompoundTag inventoryVaults = originalForgeData.getCompound(VAULT_NAME);
+
+                mapDiedInCreativeDimension.put(respawnPlayer.getUUID(), true);
+                respawnPlayer.serializeNBT().put("Pos", inventoryVaults.getCompound("main").get("Pos"));
+
+                //--- RESPAWN IN CREATIVE DIMENSION
+                // if (mapRespawnInCreative.get(originalPlayer.getUUID())) {
+                //     respawnPlayer.serializeNBT().put("Pos", ModDimension.CREATIVE_SPAWN);
+                // }
             }
 
             //--- KEEP VAULTS ON DEATH
@@ -101,26 +106,23 @@ public class PlayerEventHandler {
 
     @SubscribeEvent 
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        // 1. If died in creative dimension, respawn in creative dimension
-        // 2. If died in creative dimension, run load main vault
-        String dimension = event.getPlayer().getCommandSenderWorld().dimension().location().getPath();
-        LOGGER.info(
-            "\n\nPlayerEvent.PlayerRespawnEvent:"+
-            "\n\tNew: "+dimension,
-            "\n\tisEndConquered: "+event.isEndConquered() +
-            "\n"
-            );
+        if (mapDiedInCreativeDimension.getOrDefault(event.getPlayer().getUUID(), false)) {
+            LOGGER.info("PlayerEvent.PlayerRespawnEvent -> mapDiedInCreativeDimension");
+            VaultHandler.loadVault(event.getPlayer(), VaultsData.DEFAULT_VAULT, true);
+            mapDiedInCreativeDimension.put(event.getPlayer().getUUID(), false);
+        }
     }
     
     
-    // private static void toCreativeDimension(Player player) {
-    //     VaultHandler.saveVault(player, DEFAULT_VAULT);
-    //     VaultHandler.loadVault(player, CREATIVE_VAULT, false);
-    // }
-    // private static void fromCreativeDimension(Player player) {
-    //     VaultHandler.saveVault(player, CREATIVE_VAULT);
-    //     VaultHandler.loadVault(player, DEFAULT_VAULT, false);
-    // }
+    public static void toCreativeDimension(Player player, Boolean changeDimension, CompoundTag lastLocationData) {
+        VaultHandler.saveVault(player, VaultsData.DEFAULT_VAULT, lastLocationData);
+        VaultHandler.loadVault(player, ModDimension.CREATIVE_VAULT, changeDimension);
+    }
+
+    public static void fromCreativeDimension(Player player, Boolean changeDimension, CompoundTag lastLocationData) {
+        VaultHandler.saveVault(player, ModDimension.CREATIVE_VAULT, lastLocationData);
+        VaultHandler.loadVault(player, VaultsData.DEFAULT_VAULT, changeDimension);
+    }
 
 
 

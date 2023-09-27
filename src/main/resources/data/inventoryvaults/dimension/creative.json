@@ -1,0 +1,22 @@
+{
+  "type": "inventoryvaults:creative_type",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:plains",
+      "lakes": false,
+      "features": false,
+      "layers": [
+        {
+          "block": "minecraft:bedrock",
+          "height": 1
+        },
+        {
+          "block": "minecraft:gray_concrete",
+          "height": 63
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}
