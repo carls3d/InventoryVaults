@@ -1,5 +1,6 @@
+.gitattributes
 build/
-.testfolder/
 .gradle/
 .idea/
+.bak/
 
