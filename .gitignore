@@ -6,5 +6,4 @@ bin/
 .bak/
 
 src/main/java/com/carlsu/inventoryvaults/testing/
-src/main/java/com/carlsu/inventoryvaults/testing/EventScheduledOverlaps.java
-src/main/java/com/carlsu/inventoryvaults/testing/EventScheduledOverlaps.java
+src/main/java/com/carlsu/inventoryvaults/util/OtherPlayerInventory.java
