@@ -1,4 +1,4 @@
-package com.carlsu.inventoryvaults.events;
+package com.carlsu.inventoryvaults.handlers;
 
 import com.carlsu.inventoryvaults.commands.CreativeCommands;
 import com.carlsu.inventoryvaults.commands.VaultCommands;

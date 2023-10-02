@@ -1,9 +1,7 @@
 package com.carlsu.inventoryvaults;
 
-import com.carlsu.inventoryvaults.events.CommandRegistrationHandler;
-import com.carlsu.inventoryvaults.events.PlayerEventHandler;
-import com.carlsu.inventoryvaults.util.PlayerData;
-import com.carlsu.inventoryvaults.world.dimension.ModDimension;
+import com.carlsu.inventoryvaults.handlers.CommandRegistrationHandler;
+// import com.carlsu.inventoryvaults.world.dimension.ModDimension;
 import com.mojang.logging.LogUtils;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -16,19 +14,16 @@ import org.slf4j.Logger;
 @Mod(InventoryVaults.MODID)
 public class InventoryVaults {
     public static final String MODID = "inventoryvaults";
+    public static final String VERSION = "1.0";
     private static final Logger LOGGER = LogUtils.getLogger();
-    
 
-    private CommandRegistrationHandler commandRegistrationHandler = new CommandRegistrationHandler();
-    private PlayerEventHandler playerEventHandler = new PlayerEventHandler();
-    private PlayerData playerData = new PlayerData();
+
+    CommandRegistrationHandler commandRegistrationHandler = new CommandRegistrationHandler();
 
     public InventoryVaults() {
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(commandRegistrationHandler);
-        MinecraftForge.EVENT_BUS.register(playerEventHandler);
-        MinecraftForge.EVENT_BUS.register(playerData);
-        ModDimension.register();
+        // ModDimension.register();
         
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::loadComplete);
     }

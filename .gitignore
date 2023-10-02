@@ -1,6 +1,10 @@
 .gitattributes
 build/
+bin/
 .gradle/
 .idea/
 .bak/
 
+src/main/java/com/carlsu/inventoryvaults/testing/
+src/main/java/com/carlsu/inventoryvaults/testing/EventScheduledOverlaps.java
+src/main/java/com/carlsu/inventoryvaults/testing/EventScheduledOverlaps.java
