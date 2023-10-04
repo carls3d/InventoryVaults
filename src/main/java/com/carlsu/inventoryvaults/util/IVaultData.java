@@ -17,6 +17,7 @@ public interface IVaultData {
     public static final String VAULT_NAME = "InventoryVaults";
     public static final String ACTIVE_VAULT = "ActiveVaultKey";
     public static final String PREVIOUS_VAULT = "PreviousVaultKey";
+    public static final String LOAD_ROTATION = "LoadRotation";
     public static final String DEFAULT_VAULT = "main";
     public static final String VERSION = "1.0";
    
@@ -32,10 +33,12 @@ public interface IVaultData {
             "playerGameType",
             "ActiveEffects",
             "Inventory",
+            "SelectedItemSlot",
             "EnderItems",
             "ForgeCaps",
             // "ForgeData."+VAULT_NAME+"."+ACTIVE_VAULT,
             "Attributes",
+            "abilities",
             "Dimension",
             "Pos",
             "Rotation"
