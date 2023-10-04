@@ -7,7 +7,6 @@ import com.carlsu.inventoryvaults.util.VaultUtils;
 import com.carlsu.inventoryvaults.world.dimension.CreativeDimension;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
@@ -48,7 +47,7 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         
         
         if (!VaultUtils.validKey(loadVaultKey)) {
-            // Invalid loadVaultKey, skip loading
+            LOGGER.error("5.2  VaultEvent.execute -> loadVaultKey is null, aborting");
             return;
         }
         
@@ -58,11 +57,12 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         VaultUtils.putStringInventoryVaults(player, ACTIVE_VAULT, loadVaultKey);
         
         loadVault(playerData);
+
         // if current dimension is creative, set creative mode
         if (player.getLevel().dimension() == CREATIVE_KEY) {
-            LOGGER.info("5.2  VaultEvent.loadVault: " + loadVaultKey + " -> Setting creative mode");
-            player.setGameMode(GameType.CREATIVE);
-            
+            if (player.gameMode.getGameModeForPlayer() != GameType.CREATIVE){
+                player.setGameMode(GameType.CREATIVE);
+            }
         }
     }
 
@@ -89,15 +89,10 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         return true;
     }
 
+
     // Returns vault data if it exists
     public static CompoundTag getVault(ServerPlayer player, String vaultKey) {
-        // CompoundTag ForgeData = player.getPersistentData();
 
-        // // Create InventoryVaults if it doesn't exist
-        // boolean vaultExists = ForgeData.contains(VAULT_NAME);
-        // if (!vaultExists) {
-        //     ForgeData.put(VAULT_NAME, new CompoundTag());
-        // }
         CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(player);
 
         // Create empty vault if it doesn't exist
@@ -123,6 +118,7 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         return playerVault;
     }
 
+
     // Teleport player
     public static void teleportToLocation(ServerPlayer serverPlayer, CompoundTag playerVault) {
         String vaultDimension = playerVault.getString("Dimension");
@@ -134,34 +130,32 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
             inventoryVaults.putBoolean("loadRotation", true);
         }
         
-
-
+        
         ServerLevel level = VaultUtils.getServerLevel(vaultDimension);
         if (level != null) {
             // Teleport the player
             double x = vaultPosition.getDouble(0);
             double y = vaultPosition.getDouble(1);
             double z = vaultPosition.getDouble(2);
-            LOGGER.info("5.2  teleportToLocation -> x: " + x);
-            LOGGER.info("5.2  player -> x: " + serverPlayer.getX());
-            // double x2 = serverPlayer.getX();
-            // double y2 = serverPlayer.getY();
-            // double z2 = serverPlayer.getZ();
-            // boolean loadRot = inventoryVaults.getBoolean(LOAD_ROTATION);
-            // boolean rotEmpty = vaultRotation.isEmpty();
-            
-            // float yaw = (loadRot && !rotEmpty) ? vaultRotation.getFloat(0) : serverPlayer.getYRot();
-            // float pitch = (loadRot && !rotEmpty) ? vaultRotation.getFloat(1) : serverPlayer.getXRot();
-            // float yaw = rotEmpty ? serverPlayer.getYRot() : vaultRotation.getFloat(0);
-            // float pitch = rotEmpty ? serverPlayer.getXRot() : vaultRotation.getFloat(1);
-            // float yaw = serverPlayer.getYRot();
-            // float pitch = serverPlayer.getXRot();
             float yaw = vaultRotation.getFloat(0);
             float pitch = vaultRotation.getFloat(1);
+
+            ResourceKey<Level> vaultDimensionKey = VaultUtils.getResourceKey(playerVault.getString("Dimension"));
+            if (y < -64) {
+                if (vaultDimensionKey.equals(CREATIVE_KEY)) {
+                    x = CREATIVE_SPAWN.getDouble(0);
+                    y = CREATIVE_SPAWN.getDouble(1);
+                    z = CREATIVE_SPAWN.getDouble(2);
+                    yaw = 0.0F;
+                    pitch = 0.0F;
+                }
+            }
+            
           
             serverPlayer.teleportTo(level, x, y, z, yaw, pitch);
         }
     }
+
 
     // Returns a copy of the player's data with only the keys we want
     public static CompoundTag filterVaultData(Player player) {
@@ -178,4 +172,27 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         }
         return filteredData;
     }
+
+    
+    public static void loadAdditionalData(ServerPlayer serverPlayer, CompoundTag playerVault) {
+        serverPlayer.setGameMode(GameType.byId(playerVault.getInt("playerGameType")));
+        serverPlayer.setHealth(playerVault.getFloat("Health"));
+        serverPlayer.getFoodData().setFoodLevel(playerVault.getInt("foodLevel"));
+        serverPlayer.getFoodData().setSaturation(playerVault.getFloat("foodSaturationLevel"));
+        serverPlayer.getFoodData().setExhaustion(playerVault.getFloat("foodExhaustionLevel"));
+        serverPlayer.experienceLevel = playerVault.getInt("XpLevel");
+        serverPlayer.experienceProgress = playerVault.getFloat("XpP");
+        serverPlayer.getAbilities().loadSaveData(playerVault);
+        LOGGER.info("5.2  loadAdditionalData -> flying: " + playerVault.getBoolean("abilities.flying"));
+        // serverPlayer.getAbilities().flying = playerVault.getBoolean("abilities.flying");
+    }
+
+
+    public static void clearInventoryOnEmptyVault(ServerPlayer player, CompoundTag playerVault) {
+        if (playerVault.isEmpty()) {
+            player.getInventory().clearContent();
+        }
+    }
+
+
 }

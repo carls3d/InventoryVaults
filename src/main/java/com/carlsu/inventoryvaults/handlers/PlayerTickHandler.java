@@ -32,11 +32,8 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
     private static final HashMap<UUID, Long> mapLastTime = new HashMap<>();
     private static final HashMap<UUID, PlayerData> mapPlayerData = new HashMap<>();
     private static final VaultType eventTypeDimensionChange = VaultType.fromString("DimensionChange");
-
     
 
-    public static boolean debugTick = false;
-    
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
@@ -51,7 +48,7 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
                 
                 PlayerData playerData = mapPlayerData.get(uuid);
                 if (playerData == null) {
-                    LOGGER.info("onPlayerTick.playerData == null, creating new PlayerData");
+                    // LOGGER.info("onPlayerTick.playerData == null, creating new PlayerData");
                     playerData = new PlayerData(player, playerDimension);
                     mapPlayerData.put(uuid, playerData);
                 }
@@ -59,7 +56,7 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
 
                 // ORDER MATTERS
                 if (playerData.hasChangedDimension()) {
-                    LOGGER.info("onPlayerTick.hasChangedDimension()");
+                    // LOGGER.info("onPlayerTick.hasChangedDimension()");
                     playerData.updateActiveVaultKey();
                     PlayerData playerDataCopy = playerData.copy();
                     playerData.updateLastDimension();
@@ -83,20 +80,13 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
         if (playerData.getLastDimension() == null) {
             String playerName = player != null ? player.getName().getString() : "!missing player!";
             LOGGER.error("1 "+playerName+" -> Invalid dimension change:");
-            LOGGER.error("1    Last dimension: "+ playerData.getLastDimension());
-            LOGGER.error("1    Current dimension: "+ playerData.getCurrentDimension());
+            LOGGER.error("1    Last dimension: " + playerData.getLastDimension().location().toString());
+            LOGGER.error("1    Current dimension: " + playerData.getCurrentDimension().location().toString());
         }
         // Only if last dimension is not equal to current dimension
         LOGGER.info("2 checkIfCreativeDimension");
-        LOGGER.info("2   Last dimension: "+ playerData.getLastDimension().location().getPath());
-        LOGGER.info("2   Current dimension: "+ playerData.getCurrentDimension().location().getPath());
-        // LOGGER.info("2     ActiveVaultKey: "+ playerData.getActiveVaultKey());
-        // LOGGER.info("2     PreviousVaultKey: "+ playerData.getPreviousVaultKey());
-        // LOGGER.info("\t    SaveVaultKey: "+ playerData.getSaveVaultKey());
-        // LOGGER.info("\t    LoadVaultKey: "+ playerData.getLoadVaultKey());
-        // LOGGER.info("\tPrevLocation: "+ playerData.getLastPos());
-        // LOGGER.info("\tPrevRotation: "+ playerData.getLastRot());
-
+        LOGGER.info("2   Last dimension: "+ playerData.getLastDimension().location().toString());
+        LOGGER.info("2   Current dimension: "+ playerData.getCurrentDimension().location().toString());
 
 
         if (playerData.getCurrentDimension() == CREATIVE_KEY) {

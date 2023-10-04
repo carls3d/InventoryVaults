@@ -42,18 +42,6 @@ public class VaultCommands extends CommandUtils implements IVaultData{
         LiteralArgumentBuilder<CommandSourceStack> vaultCommands = Commands.literal("Vaults")
             .requires(player -> player.hasPermission(2));
 
-
-        // vaultCommands.then(
-        // Commands.literal("debugTickEvents").executes(context -> {
-        //         sendSuccess("Debug: " + PlayerTickHandler.debugTick);
-        //         return 1;})
-        //         .then(
-        //     Commands.argument("debug", BoolArgumentType.bool()).executes(context -> {
-        //             PlayerTickHandler.debugTick = BoolArgumentType.getBool(context, "debug");
-        //             sendSuccess("Debug: " + PlayerTickHandler.debugTick);
-        //             return 1;})
-        //             ));
-     
         
         vaultCommands
         .then(

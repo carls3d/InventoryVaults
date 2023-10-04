@@ -27,18 +27,14 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
     public static void onEventReceived(UpdateVaultEvent event) throws InterruptedException{
         LOGGER.info("3 VaultEventDispatcher:");
         LOGGER.info("3   Type: " + event.getEventType().getValue());
-        // LOGGER.info("\tActiveVaultKey: "+event.getPlayerData().getActiveVaultKey());
-        // LOGGER.info("\tPreviousVaultKey: "+event.getPlayerData().getPreviousVaultKey());
-        // LOGGER.info("\tsaveVaultKey: "+event.getSaveVaultKey());
-        // LOGGER.info("\tloadVaultKey: "+event.getLoadVaultKey());
         UUID uuid = event.getPlayerData().getUUID();
 
         if (shouldQueueEvent(uuid)) {
-            LOGGER.info("3   Event queued");
+            LOGGER.info("3     Event queued");
             // Queue the event for later execution.
             eventQueue.computeIfAbsent(uuid, k -> new LinkedList<>()).add(event);
         } else {
-            LOGGER.info("3   Event dispatched");
+            LOGGER.info("3     Event dispatched");
             // Dispatch event
             executeEvent(event);
         }
@@ -55,7 +51,7 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
 
         // Mark the UUID as being processed
         uuidQueueStatus.put(uuid, true);
-        LOGGER.info("4  VaultEventDispatcher.executeEvent");
+        LOGGER.info("4 VaultEventDispatcher.executeEvent");
         
         VaultType eventType = event.getEventType();
         
@@ -63,10 +59,10 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
         if (eventType == VaultType.MANUAL) {
             VaultEventCommand vaultEventCommand = new VaultEventCommand();
             if (event.getPlayerData().getSaveVaultKey() != null) {
-                LOGGER.info("4.1  VaultType.MANUAL.execute");
+                LOGGER.info("4   VaultType.MANUAL.execute");
                 vaultEventCommand.execute(event.getPlayerData());
             } else {
-                LOGGER.error("4.1  ! VaultType.MANUAL: saveVaultKey is null, aborting");
+                LOGGER.error("4  ! VaultType.MANUAL: saveVaultKey is null, aborting");
             }
         }
         
@@ -74,21 +70,21 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
         if (eventType == VaultType.DIMENSION_CHANGE) {
             VaultEventDimension vaultEventDimension = new VaultEventDimension();
             if (validDimensionChange(event.getPlayerData())) {
-                LOGGER.info("4.2  VaultType.DIMENSION_CHANGE.execute");
+                LOGGER.info("4   VaultType.DIMENSION_CHANGE.execute");
                 vaultEventDimension.execute(event.getPlayerData());
             } else {
-                LOGGER.info("4.2  ! VaultType.DIMENSION_CHANGE: Save and Load vaults are the same, aborting");
+                LOGGER.info("4  ! VaultType.DIMENSION_CHANGE: Save and Load vaults are the same, aborting");
             }
         }
 
         // Gamemode change trigger
         if (eventType == VaultType.GAMEMODE_CHANGE) {
-            LOGGER.info("4.1  How did you get here?");
+            LOGGER.info("4   How did you get here?");
         }
     
 
         // Mark the UUID as done being processed
-        LOGGER.info("6  VaultEventDispatcher.executeEvent -> uuidQueueStatus set to false");
+        LOGGER.info("6 VaultEventDispatcher.executeEvent -> uuidQueueStatus set to false");
         uuidQueueStatus.put(uuid, false);
     
         // Process the next event in the queue for the same UUID, if any
@@ -102,16 +98,8 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
 
     public static boolean validDimensionChange(PlayerData playerData) {
         // Stops the event from triggering if the player changed dimensions from a manual trigger
-        LOGGER.info("4.1  VaultEventDispatcher.validDimensionChange");
-        LOGGER.info("4.1    saveVaultKey: " + playerData.getSaveVaultKey());
-        LOGGER.info("4.1    loadVaultKey: " + playerData.getLoadVaultKey());
-        LOGGER.info("4.1    activeVaultKey: " + playerData.getActiveVaultKey());
-        LOGGER.info("4.1    previousVaultKey: " + playerData.getPreviousVaultKey());
-        LOGGER.info("4.1    lastDimension: " + playerData.getLastDimension().location().toString());
-        LOGGER.info("4.1    currentDimension: " + playerData.getCurrentDimension().location().toString());
         boolean hasChangedSave = !playerData.getSaveVaultKey().equals(playerData.getLoadVaultKey());
         boolean hasChangedDimension = !playerData.getCurrentDimension().equals(playerData.getLastDimension());
-
         boolean activeKeyEqualsSaveKey = playerData.getSaveVaultKey().equals(playerData.getActiveVaultKey());
         // Has changed save         &&      has changed dimension -> true
         // Has changed save         &&      has not changed dimension -> false

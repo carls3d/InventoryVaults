@@ -25,9 +25,9 @@ public interface CreativeDimension {
     
     static ListTag initializeCreativeSpawn() {
         ListTag listTag = new ListTag();
-        listTag.add(DoubleTag.valueOf(0.0D));
+        listTag.add(DoubleTag.valueOf(0.5D));
         listTag.add(DoubleTag.valueOf(64.0D));
-        listTag.add(DoubleTag.valueOf(0.0D));
+        listTag.add(DoubleTag.valueOf(0.5D));
         return listTag;
     }
     String dimension = "overworld";

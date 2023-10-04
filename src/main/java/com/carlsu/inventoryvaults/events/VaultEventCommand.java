@@ -39,25 +39,13 @@ public class VaultEventCommand extends VaultEvent{
         ServerPlayer serverPlayer = (ServerPlayer) player;
         
 
-        if (playerVault.isEmpty()) {
-            player.getInventory().clearContent();
-            teleportToLocation(serverPlayer, playerVault);
-            LOGGER.info("5.2  Cleared inventory. End of loadVault");
-        }
+        clearInventoryOnEmptyVault(player, playerVault);
 
         if (!validPlayerVaultLocation(serverPlayer, playerVault)) return;
         
-
-        
         player.load(playerVault); /*Inventory, EnderItems, ForgeCaps, ForgeData, Attributes*/
 
-        serverPlayer.setGameMode(GameType.byId(playerVault.getInt("playerGameType")));
-        serverPlayer.setHealth(playerVault.getFloat("Health"));
-        serverPlayer.getFoodData().setFoodLevel(playerVault.getInt("foodLevel"));
-        serverPlayer.getFoodData().setSaturation(playerVault.getFloat("foodSaturationLevel"));
-        serverPlayer.getFoodData().setExhaustion(playerVault.getFloat("foodExhaustionLevel"));
-        serverPlayer.experienceLevel = playerVault.getInt("XpLevel");
-        serverPlayer.experienceProgress = playerVault.getFloat("XpP");
+        loadAdditionalData(serverPlayer, playerVault);
 
         teleportToLocation(serverPlayer, playerVault);
 
