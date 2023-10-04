@@ -170,8 +170,8 @@ public class PlayerData implements IVaultData{
     public void updateLastRot(Player player) {
         Vec2 rot = player.getRotationVector();
         this.lastRot = new ListTag();
-        this.lastRot.add(FloatTag.valueOf(rot.x));
         this.lastRot.add(FloatTag.valueOf(rot.y));
+        this.lastRot.add(FloatTag.valueOf(rot.x));
     }
     public void updateCurrentDimension(Player player) {
         ResourceKey<Level> dimension = player.level.dimension();

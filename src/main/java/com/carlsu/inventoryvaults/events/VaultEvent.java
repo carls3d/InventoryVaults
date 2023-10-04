@@ -4,21 +4,23 @@ import com.carlsu.inventoryvaults.types.PlayerData;
 import com.carlsu.inventoryvaults.types.VaultType;
 import com.carlsu.inventoryvaults.util.IVaultData;
 import com.carlsu.inventoryvaults.util.VaultUtils;
+import com.carlsu.inventoryvaults.world.dimension.CreativeDimension;
 
-import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 
-public abstract class VaultEvent implements IVaultData {
+public abstract class VaultEvent implements IVaultData, CreativeDimension {
     public final VaultType eventType;
 
     public VaultEvent(VaultType eventType) {
@@ -54,7 +56,14 @@ public abstract class VaultEvent implements IVaultData {
         LOGGER.info("5.2  VaultEvent.loadVault: " + loadVaultKey);
         VaultUtils.putStringInventoryVaults(player, PREVIOUS_VAULT, saveVaultKey);
         VaultUtils.putStringInventoryVaults(player, ACTIVE_VAULT, loadVaultKey);
+        
         loadVault(playerData);
+        // if current dimension is creative, set creative mode
+        if (player.getLevel().dimension() == CREATIVE_KEY) {
+            LOGGER.info("5.2  VaultEvent.loadVault: " + loadVaultKey + " -> Setting creative mode");
+            player.setGameMode(GameType.CREATIVE);
+            
+        }
     }
 
 
@@ -63,38 +72,55 @@ public abstract class VaultEvent implements IVaultData {
     
 
     // Check if location data is valid
-    public static boolean validPlayerVaultLocation(CompoundTag playerVault){
+    public static boolean validPlayerVaultLocation(ServerPlayer player, CompoundTag playerVault){
         String vaultDimension = playerVault.getString("Dimension");
         ListTag vaultPosition = playerVault.getList("Pos", 6);
-        ListTag vaultRotation = playerVault.getList("Rotation", 5);
-        if (vaultPosition.size() != 3 ||
-            vaultRotation.size() != 2 ||
-            vaultDimension.isEmpty()
-            ) {
-            LOGGER.error("loadVault -> Invalid dimension: Dimension: " + vaultDimension);
-            LOGGER.error("loadVault -> Invalid position: Pos: " + vaultPosition);
-            LOGGER.error("loadVault -> Invalid rotation: Rotation: " + vaultRotation);
+        ResourceKey<Level> vaultDimensionKey = VaultUtils.getResourceKey(vaultDimension);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+
+        if (vaultPosition.size() != 3) {
+            LOGGER.error("5.2  ! loadVault -> Invalid position: Pos: " + vaultPosition);
+            return false;
+        }
+        if (!server.levelKeys().contains(vaultDimensionKey)) {
+            LOGGER.error("5.2  ! loadVault -> Invalid dimension: Dimension: " + vaultDimension);
             return false;
         }
         return true;
     }
 
     // Returns vault data if it exists
-    public static CompoundTag getVault(Player player, String vaultKey) {
-        CompoundTag ForgeData = player.getPersistentData();
+    public static CompoundTag getVault(ServerPlayer player, String vaultKey) {
+        // CompoundTag ForgeData = player.getPersistentData();
 
-        // Create InventoryVaults if it doesn't exist
-        boolean vaultExists = ForgeData.contains(VAULT_NAME);
-        if (!vaultExists) {
-            ForgeData.put(VAULT_NAME, new CompoundTag());
-        }
-        CompoundTag inventoryVault = ForgeData.getCompound(VAULT_NAME);
+        // // Create InventoryVaults if it doesn't exist
+        // boolean vaultExists = ForgeData.contains(VAULT_NAME);
+        // if (!vaultExists) {
+        //     ForgeData.put(VAULT_NAME, new CompoundTag());
+        // }
+        CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(player);
 
         // Create empty vault if it doesn't exist
-        if (!inventoryVault.contains(vaultKey)) {
-            inventoryVault.put(vaultKey, new CompoundTag());
+        if (!inventoryVaults.contains(vaultKey)) {
+            inventoryVaults.put(vaultKey, new CompoundTag());
         }
-        return inventoryVault.getCompound(vaultKey);
+        CompoundTag playerVault = inventoryVaults.getCompound(vaultKey);
+
+        if (playerVault.isEmpty()) {
+            return playerVault;
+        }
+        
+        ListTag playerRot = player.serializeNBT().getList("Rotation", 5);
+        ListTag vaultRotation = playerVault.getList("Rotation", 5);
+
+        boolean loadRot = inventoryVaults.getBoolean(LOAD_ROTATION);
+        boolean rotEmpty = vaultRotation.isEmpty();
+
+        if (!loadRot || rotEmpty) {
+            playerVault.put("Rotation", playerRot);
+        }
+
+        return playerVault;
     }
 
     // Teleport player
@@ -102,16 +128,38 @@ public abstract class VaultEvent implements IVaultData {
         String vaultDimension = playerVault.getString("Dimension");
         ListTag vaultPosition = playerVault.getList("Pos", 6);
         ListTag vaultRotation = playerVault.getList("Rotation", 5);
+        
+        CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(serverPlayer);
+        if (!inventoryVaults.contains(LOAD_ROTATION)) {
+            inventoryVaults.putBoolean("loadRotation", true);
+        }
+        
 
-        ServerLevel targetWorld = getServerLevel(vaultDimension);
-        if (targetWorld != null) {
+
+        ServerLevel level = VaultUtils.getServerLevel(vaultDimension);
+        if (level != null) {
             // Teleport the player
             double x = vaultPosition.getDouble(0);
             double y = vaultPosition.getDouble(1);
             double z = vaultPosition.getDouble(2);
-            float rotPitch = vaultRotation.getFloat(0);
-            float rotYaw = vaultRotation.getFloat(1);
-            serverPlayer.teleportTo(targetWorld, x, y, z, rotYaw, rotPitch);
+            LOGGER.info("5.2  teleportToLocation -> x: " + x);
+            LOGGER.info("5.2  player -> x: " + serverPlayer.getX());
+            // double x2 = serverPlayer.getX();
+            // double y2 = serverPlayer.getY();
+            // double z2 = serverPlayer.getZ();
+            // boolean loadRot = inventoryVaults.getBoolean(LOAD_ROTATION);
+            // boolean rotEmpty = vaultRotation.isEmpty();
+            
+            // float yaw = (loadRot && !rotEmpty) ? vaultRotation.getFloat(0) : serverPlayer.getYRot();
+            // float pitch = (loadRot && !rotEmpty) ? vaultRotation.getFloat(1) : serverPlayer.getXRot();
+            // float yaw = rotEmpty ? serverPlayer.getYRot() : vaultRotation.getFloat(0);
+            // float pitch = rotEmpty ? serverPlayer.getXRot() : vaultRotation.getFloat(1);
+            // float yaw = serverPlayer.getYRot();
+            // float pitch = serverPlayer.getXRot();
+            float yaw = vaultRotation.getFloat(0);
+            float pitch = vaultRotation.getFloat(1);
+          
+            serverPlayer.teleportTo(level, x, y, z, yaw, pitch);
         }
     }
 
@@ -129,24 +177,5 @@ public abstract class VaultEvent implements IVaultData {
             }
         }
         return filteredData;
-    }
-
-    public static ServerLevel getServerLevel(ResourceKey<Level> dimensionKey) {
-        return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
-    }
-    public static ServerLevel getServerLevel(String dimension) {
-        return getServerLevel(new ResourceLocation(dimension));
-    }
-    public static ServerLevel getServerLevel(ResourceLocation resourceLocation) {
-        return getServerLevel(resourceLocation);
-        // ResourceKey<Level> dimensionKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
-        // return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
-    }
-
-    public static ResourceKey<Level> getResourceKey(String dimension) {
-        return getResourceKey(new ResourceLocation(dimension));
-    }
-    public static ResourceKey<Level> getResourceKey(ResourceLocation resourceLocation) {
-        return ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
     }
 }

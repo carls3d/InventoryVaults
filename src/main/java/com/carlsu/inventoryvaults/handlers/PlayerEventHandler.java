@@ -36,7 +36,7 @@ public final class PlayerEventHandler implements IVaultData, CreativeDimension{
     
     @SubscribeEvent
     public static void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
-        // Update player permission cache for commands -> enables/disables /creative teleport
+        // Update player permission cache for commands -> enables/disables "/creative teleport"
         ServerPlayer player = (ServerPlayer) event.getPlayer();
         if (event.getFrom() == CREATIVE_KEY || event.getTo() == CREATIVE_KEY) {
             LOGGER.info("Updating player permission cache");
@@ -84,6 +84,9 @@ public final class PlayerEventHandler implements IVaultData, CreativeDimension{
 
     @SubscribeEvent 
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        //TODO Yet to be implemented
+        // Would need to cancel bed spawn
+        
         if (mapDiedInCreativeDimension.getOrDefault(event.getPlayer().getUUID(), false)) {
             LOGGER.info("PlayerEvent.PlayerRespawnEvent -> mapDiedInCreativeDimension");
 //            VaultHandlerDimension.loadVault(event.getPlayer(), VaultData.DEFAULT_VAULT, true);

@@ -39,6 +39,9 @@ public class CommandUtils {
     public static void sendFailure(CommandSourceStack source, String string) {
         source.sendFailure(new TextComponent(string));
     }
+    public static void sendFailure(CommandSourceStack source, Component component) {
+        source.sendFailure(component);
+    }
 
     private static CommandSourceStack getDefaultSource() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();

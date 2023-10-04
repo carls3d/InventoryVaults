@@ -57,37 +57,50 @@ public class CreativeCommands extends CommandUtils implements CreativeDimension,
 
         creativeCommands.then(
             Commands.literal("enter").executes(context -> {
+                CommandSourceStack source = context.getSource();
                 ServerPlayer player = context.getSource().getPlayerOrException();
                 ResourceKey<Level> dimensionKey = player.level.dimension();
                 if (dimensionKey == CreativeDimension.CREATIVE_KEY) {
-                    sendSuccess(context.getSource(), 
+                    sendFailure(context.getSource(), 
                         new TextComponent("You're already in creative silly~").withStyle(ChatFormatting.RED));
                     return 0;
                 } else {
-                    sendSuccess(context.getSource(), 
-                        new TextComponent("Teleporting to creative dimension...").withStyle(ChatFormatting.GREEN));
-                    player.teleportTo(
-                        ServerLifecycleHooks.getCurrentServer().getLevel(CreativeDimension.CREATIVE_KEY),
-                        CreativeDimension.CREATIVE_SPAWN.getDouble(0), 
-                        CreativeDimension.CREATIVE_SPAWN.getDouble(1), 
-                        CreativeDimension.CREATIVE_SPAWN.getDouble(2), 
-                        0.0F, 
-                        0.0F
-                        );
-                    return 1;
-                }}))
+                    // Check if player has a vault in creative dimension
+                    CompoundTag creativeVault = VaultUtils.getInventoryVaults(player).getCompound(CREATIVE_VAULT_KEY);
+                    String creativeDimension = creativeVault.getString("Dimension");
+                    ResourceKey<Level> creativeDimensionKey = VaultUtils.getResourceKey(creativeDimension);
+                    
+                    if (creativeDimensionKey.equals(CREATIVE_KEY)) {
+                        VaultCommands.commandLoadVault(source, player, CREATIVE_VAULT_KEY);
+                    } else {
+                        CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(player);
+                        inventoryVaults.remove(CREATIVE_VAULT_KEY);
+                        player.teleportTo(
+                            ServerLifecycleHooks.getCurrentServer().getLevel(CreativeDimension.CREATIVE_KEY),
+                            CreativeDimension.CREATIVE_SPAWN.getDouble(0), 
+                            CreativeDimension.CREATIVE_SPAWN.getDouble(1), 
+                            CreativeDimension.CREATIVE_SPAWN.getDouble(2), 
+                            0.0F, 
+                            0.0F
+                            );
+                    } 
+                    sendSuccess(
+                        context.getSource(), 
+                        new TextComponent("Entering to creative dimension...").withStyle(ChatFormatting.GREEN));
+                    return 1;}}))
         .then(
             Commands.literal("leave").executes(context -> {
                 CommandSourceStack source = context.getSource();
                 ServerPlayer player = source.getPlayerOrException();
                 ResourceKey<Level> dimensionKey = player.level.dimension();
                 if (dimensionKey != CreativeDimension.CREATIVE_KEY) {
-                    sendSuccess(source, 
+                    sendFailure(source, 
                         new TextComponent("Not in creative dimension").withStyle(ChatFormatting.RED));
                     return 0;
                 } else {
                     CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(player);
                     String previousVault = VaultUtils.getStringOrDefault(player, PREVIOUS_VAULT, DEFAULT_VAULT);
+                    
                     if (inventoryVaults.contains(previousVault)) {
                         // CompoundTag vault = inventoryVaults.get(previousVault);
                         if (inventoryVaults.getCompound(previousVault).contains("Dimension")) {
@@ -97,9 +110,20 @@ public class CreativeCommands extends CommandUtils implements CreativeDimension,
                             return 1;
                         }
                     }
+                    return 1;}}))
+        .then(
+                Commands.literal("rotation").executes(context -> {
+                    CommandSourceStack source = context.getSource();
+                    ServerPlayer player = source.getPlayerOrException();
+                    CompoundTag invVaults = VaultUtils.getInventoryVaults(player);
+    
+                    boolean hasLoadRot = invVaults.contains(LOAD_ROTATION);
+                    boolean loadRot = hasLoadRot ? invVaults.getBoolean(LOAD_ROTATION) : false;
+                    
+                    invVaults.putBoolean(LOAD_ROTATION, !loadRot);
+                    sendSuccess(source, new TextComponent("loadRotation set to " + !loadRot).withStyle(ChatFormatting.GREEN));
                     return 1;
-                }})
-            );
+                }));
 
         dispatcher.register(creativeCommands);
 

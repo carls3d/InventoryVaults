@@ -53,11 +53,9 @@ public class VaultCommands extends CommandUtils implements IVaultData{
         //             sendSuccess("Debug: " + PlayerTickHandler.debugTick);
         //             return 1;})
         //             ));
-        
+     
         
         vaultCommands
-        // .then(
-        // Commands.literal("dev")
         .then(
             Commands.literal("save").executes(context ->
                     commandSaveVault(context.getSource())).then(
@@ -97,20 +95,21 @@ public class VaultCommands extends CommandUtils implements IVaultData{
                             context.getSource(), 
                             EntityArgument.getPlayer(context, "Player")))))
 
-        .then(
-            Commands.literal("types").then(
-                Commands.argument("vaultKey", StringArgumentType.string()).executes(context -> {
-                Player player = context.getSource().getPlayerOrException();
-                String stringArg = StringArgumentType.getString(context, "vaultKey");
-                sendSuccess(context.getSource(), "VaultTypes:");
-                HashMap<String, Pair<Byte, TagType<?>>> tagTypes = VaultUtils.getTagTypes(player, stringArg);
+        // .then(
+        //     Commands.literal("types").then(
+        //         Commands.argument("vaultKey", StringArgumentType.string()).executes(context -> {
+        //         Player player = context.getSource().getPlayerOrException();
+        //         String stringArg = StringArgumentType.getString(context, "vaultKey");
+        //         sendSuccess(context.getSource(), "VaultTypes:");
+        //         HashMap<String, Pair<Byte, TagType<?>>> tagTypes = VaultUtils.getTagTypes(player, stringArg);
                 
-                for (String key : tagTypes.keySet()) {
-                    // Pair<Byte, TagType<?>> pair = tagTypes.get(key);
-                    sendSuccess(context.getSource(), key + ": " + tagTypes.get(key).second.getPrettyName() + 
-                    " -> " + tagTypes.get(key).second.getName() + " -> " + tagTypes.get(key).first);
-                }
-                return 1;})));
+        //         for (String key : tagTypes.keySet()) {
+        //             // Pair<Byte, TagType<?>> pair = tagTypes.get(key);
+        //             sendSuccess(context.getSource(), key + ": " + tagTypes.get(key).second.getPrettyName() + 
+        //             " -> " + tagTypes.get(key).second.getName() + " -> " + tagTypes.get(key).first);
+        //         }
+        //         return 1;})))
+                ;
         dispatcher.register(vaultCommands);
     }
 
@@ -147,7 +146,7 @@ public class VaultCommands extends CommandUtils implements IVaultData{
         PlayerData playerData = new PlayerData(player, dimensionKey);
         playerData.setLoadVaultKey(vaultKey);
         MinecraftForge.EVENT_BUS.post(new UpdateVaultEvent(playerData, VaultType.MANUAL));
-        sendSuccess(source, new TextComponent("Vault loaded").withStyle(ChatFormatting.GREEN));
+        // sendSuccess(source, new TextComponent("Vault loaded").withStyle(ChatFormatting.GREEN));
         return 1;
     }
     
