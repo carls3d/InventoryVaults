@@ -7,6 +7,6 @@ Vaults are stored on each player's NBT data where the names of said vaults are t
 ---
 
 **Usecase examples:**
-- Creative dimension: Separate inventory and creative for every player
-- Survival mode: For builders/moderators/admins/etc. having their survival experience separated from their usual "powers"
+- **Creative dimension:** Separate inventory and creative for every player
+- **Survival mode:** For builders/moderators/admins/etc. having their survival experience separated from their usual "powers"
 
