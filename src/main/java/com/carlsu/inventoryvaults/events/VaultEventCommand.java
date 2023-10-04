@@ -5,6 +5,7 @@ import com.carlsu.inventoryvaults.types.VaultType;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 
 public class VaultEventCommand extends VaultEvent{
@@ -42,6 +43,12 @@ public class VaultEventCommand extends VaultEvent{
         }
         if (!validPlayerVaultLocation(playerVault)) return;
         
+
+        if (playerVault == new CompoundTag()) {
+            player.getInventory().clearContent();
+            LOGGER.info("5.2  Cleared inventory. End of loadVault");
+            return;
+        }
         player.load(playerVault); /*Inventory, EnderItems, ForgeCaps, ForgeData, Attributes*/
 
         serverPlayer.setGameMode(GameType.byId(playerVault.getInt("playerGameType")));

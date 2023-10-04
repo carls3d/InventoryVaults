@@ -15,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -33,10 +34,15 @@ public final class PlayerEventHandler implements IVaultData, CreativeDimension{
     public static final VaultType eventTypeGamemodeChange = VaultType.fromString("GamemodeChange");
 
     
-    // @SubscribeEvent
-    // public static void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
-    //     LOGGER.info("PlayerEventHandler.PlayerChangedDimensionEvent");
-    // }
+    @SubscribeEvent
+    public static void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
+        // Update player permission cache for commands -> enables/disables /creative teleport
+        ServerPlayer player = (ServerPlayer) event.getPlayer();
+        if (event.getFrom() == CREATIVE_KEY || event.getTo() == CREATIVE_KEY) {
+            LOGGER.info("Updating player permission cache");
+            player.server.getPlayerList().sendPlayerPermissionLevel(player);
+        };
+    }
 
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {

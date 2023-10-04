@@ -20,7 +20,7 @@ public interface CreativeDimension {
         Registry.DIMENSION_TYPE_REGISTRY, 
         CREATIVE_KEY.getRegistryName());
     
-    public static final String CREATIVE_VAULT = "creative";
+    public static final String CREATIVE_VAULT_KEY = "creative";
     public static final ListTag CREATIVE_SPAWN = initializeCreativeSpawn();
     
     static ListTag initializeCreativeSpawn() {

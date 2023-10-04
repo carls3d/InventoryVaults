@@ -10,6 +10,12 @@ import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
+// TODO
+// - On enter creative dimension
+//      - Set gamemode to creative
+//      - Set flight to true?
+//      - When no creative vault exists, clear inventory after successful save
+// - On sucessful save -> loading new/empty vault -> clear inventory
 
 @Mod(InventoryVaults.MODID)
 public class InventoryVaults {

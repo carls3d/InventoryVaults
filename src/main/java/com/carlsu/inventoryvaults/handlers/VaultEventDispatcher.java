@@ -66,7 +66,7 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
                 LOGGER.info("4.1  VaultType.MANUAL.execute");
                 vaultEventCommand.execute(event.getPlayerData());
             } else {
-                LOGGER.error("4.1  ! VaultType.MANUAL: saveVaultKey is null");
+                LOGGER.error("4.1  ! VaultType.MANUAL: saveVaultKey is null, aborting");
             }
         }
         

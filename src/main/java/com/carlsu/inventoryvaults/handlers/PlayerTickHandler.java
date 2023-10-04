@@ -31,15 +31,7 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
 
     private static final HashMap<UUID, Long> mapLastTime = new HashMap<>();
     private static final HashMap<UUID, PlayerData> mapPlayerData = new HashMap<>();
-    // private static final HashMap<UUID, ResourceKey<Level>> mapLastDimension = new HashMap<>();
-    // private static final HashMap<UUID, ResourceKey<Level>> mapCurrentDimension = new HashMap<>();
-    // private static final HashMap<UUID, ListTag> mapLastPos = new HashMap<>();
-    // private static final HashMap<UUID, ListTag> mapLastRot = new HashMap<>();
     private static final VaultType eventTypeDimensionChange = VaultType.fromString("DimensionChange");
-
-    // private static final HashMap<UUID, Vec3> mapLastPos = new HashMap<>();
-    // private static final HashMap<UUID, Vec2> mapLastRot = new HashMap<>();
-    // private static final HashMap<UUID, ResourceKey<Level>> mapLastDimension = new HashMap<>();
 
     
 
@@ -110,16 +102,16 @@ public final class PlayerTickHandler implements CreativeDimension, IVaultData{
         if (playerData.getCurrentDimension() == CREATIVE_KEY) {
             String activeVaultKey = playerData.getActiveVaultKey();
 
-            playerData.setSaveVaultKey((!VaultUtils.validKey(activeVaultKey) || activeVaultKey.equals(CREATIVE_VAULT)) ? DEFAULT_VAULT : activeVaultKey);
-            playerData.setLoadVaultKey(CREATIVE_VAULT);
+            playerData.setSaveVaultKey((!VaultUtils.validKey(activeVaultKey) || activeVaultKey.equals(CREATIVE_VAULT_KEY)) ? DEFAULT_VAULT : activeVaultKey);
+            playerData.setLoadVaultKey(CREATIVE_VAULT_KEY);
             LOGGER.info("2   currentDimension == CREATIVE_KEY");
             fireUpdateVaultEventDimension(playerData, eventTypeDimensionChange);
         }
         else if (playerData.getLastDimension() == CREATIVE_KEY) {
             String previousVaultKey = playerData.getPreviousVaultKey();
 
-            playerData.setSaveVaultKey(CREATIVE_VAULT);
-            playerData.setLoadVaultKey((!VaultUtils.validKey(previousVaultKey) || previousVaultKey.equals(CREATIVE_VAULT)) ? DEFAULT_VAULT : previousVaultKey);
+            playerData.setSaveVaultKey(CREATIVE_VAULT_KEY);
+            playerData.setLoadVaultKey((!VaultUtils.validKey(previousVaultKey) || previousVaultKey.equals(CREATIVE_VAULT_KEY)) ? DEFAULT_VAULT : previousVaultKey);
             LOGGER.info("2   lastDimension == CREATIVE_KEY");
             fireUpdateVaultEventDimension(playerData, eventTypeDimensionChange);
         }

@@ -45,7 +45,10 @@ public abstract class VaultEvent implements IVaultData {
         VaultUtils.putStringInventoryVaults(player, ACTIVE_VAULT, saveVaultKey);
         
         
-        if (!VaultUtils.validKey(loadVaultKey)) return;
+        if (!VaultUtils.validKey(loadVaultKey)) {
+            // Invalid loadVaultKey, skip loading
+            return;
+        }
         
         
         LOGGER.info("5.2  VaultEvent.loadVault: " + loadVaultKey);
@@ -131,12 +134,19 @@ public abstract class VaultEvent implements IVaultData {
     public static ServerLevel getServerLevel(ResourceKey<Level> dimensionKey) {
         return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
     }
-    public static ServerLevel getServerLevel(ResourceLocation resourceLocation) {
-        ResourceKey<Level> dimensionKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
-        return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
-    }
     public static ServerLevel getServerLevel(String dimension) {
         return getServerLevel(new ResourceLocation(dimension));
     }
-    
+    public static ServerLevel getServerLevel(ResourceLocation resourceLocation) {
+        return getServerLevel(resourceLocation);
+        // ResourceKey<Level> dimensionKey = ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
+        // return ServerLifecycleHooks.getCurrentServer().getLevel(dimensionKey);
+    }
+
+    public static ResourceKey<Level> getResourceKey(String dimension) {
+        return getResourceKey(new ResourceLocation(dimension));
+    }
+    public static ResourceKey<Level> getResourceKey(ResourceLocation resourceLocation) {
+        return ResourceKey.create(Registry.DIMENSION_REGISTRY, resourceLocation);
+    }
 }

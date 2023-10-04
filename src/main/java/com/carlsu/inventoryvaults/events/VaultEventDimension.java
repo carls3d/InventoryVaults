@@ -7,6 +7,7 @@ import com.carlsu.inventoryvaults.util.VaultUtils;
 import com.carlsu.inventoryvaults.world.dimension.CreativeDimension;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 
@@ -77,10 +78,14 @@ public class VaultEventDimension extends VaultEvent implements CreativeDimension
                 LOGGER.error("5.2  VaultEventDimension.loadVault.teleport: teleport destination is in a different dimension");
                 return;
             }
-
+            ListTag vaultPosition = playerVault.getList("Pos", 6);
+            playerVault.getString("Dimension").equals(CREATIVE_KEY.location().toString());
+            double y = vaultPosition.getDouble(1);
+            if (y < -64) {
+                playerVault.put("Pos", CREATIVE_SPAWN);
+            };
             teleportToLocation(serverPlayer, playerVault);
         }
-
         LOGGER.info("5.2  End of loadVault");
     }
 }
