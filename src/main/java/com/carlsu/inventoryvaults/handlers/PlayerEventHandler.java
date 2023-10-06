@@ -17,6 +17,7 @@ import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -33,7 +34,19 @@ public final class PlayerEventHandler implements IVaultData, CreativeDimension{
     public static final VaultType eventTypeDimensionChange = VaultType.fromString("DimensionChange"); 
     public static final VaultType eventTypeGamemodeChange = VaultType.fromString("GamemodeChange");
 
-    
+    // new PlayerEvent.LoadFromFile(player, null, player.getUUID().toString());
+
+    @SubscribeEvent
+    public static void onPlayerLoad(PlayerEvent.LoadFromFile event) {
+        LOGGER.info("directory: " + event.getPlayerDirectory());
+        LOGGER.info("PlayerEvent.LoadFromFile");
+    }
+    @SubscribeEvent
+    public static void onPlayerSave(PlayerEvent.SaveToFile event) {
+        LOGGER.info("directory: " + event.getPlayerDirectory());
+        LOGGER.info("PlayerEvent.SaveToFile");
+    }
+
     @SubscribeEvent
     public static void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
         // Update player permission cache for commands -> enables/disables "/creative teleport"

@@ -1,5 +1,6 @@
 package com.carlsu.inventoryvaults.events;
 
+import com.carlsu.inventoryvaults.compatibility.CosArmor;
 import com.carlsu.inventoryvaults.types.PlayerData;
 import com.carlsu.inventoryvaults.types.VaultType;
 import com.carlsu.inventoryvaults.util.IVaultData;
@@ -13,7 +14,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.server.ServerLifecycleHooks;
@@ -158,7 +158,7 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
 
 
     // Returns a copy of the player's data with only the keys we want
-    public static CompoundTag filterVaultData(Player player) {
+    public static CompoundTag filterVaultData(ServerPlayer player) {
         CompoundTag playerData = player.serializeNBT();
 
         // Store only the keys in VAULT_FILTER
@@ -170,6 +170,7 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
                 filteredData.put(key, value);
             }
         }
+        filteredData = CosArmor.injectCosArmor(player, filteredData);
         return filteredData;
     }
 
@@ -183,14 +184,18 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         serverPlayer.experienceLevel = playerVault.getInt("XpLevel");
         serverPlayer.experienceProgress = playerVault.getFloat("XpP");
         serverPlayer.getAbilities().loadSaveData(playerVault);
-        LOGGER.info("5.2  loadAdditionalData -> flying: " + playerVault.getBoolean("abilities.flying"));
-        // serverPlayer.getAbilities().flying = playerVault.getBoolean("abilities.flying");
+        CosArmor.cosLoad(serverPlayer, playerVault);
     }
+    
 
 
     public static void clearInventoryOnEmptyVault(ServerPlayer player, CompoundTag playerVault) {
         if (playerVault.isEmpty()) {
             player.getInventory().clearContent();
+            CosArmor.commandClear(player);
+        } 
+        else if (playerVault.getCompound(CosArmor.cosKey).isEmpty()){
+            CosArmor.commandClear(player);
         }
     }
 

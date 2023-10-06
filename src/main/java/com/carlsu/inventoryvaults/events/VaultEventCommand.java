@@ -5,7 +5,6 @@ import com.carlsu.inventoryvaults.types.VaultType;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
 
 public class VaultEventCommand extends VaultEvent{
 
@@ -24,9 +23,9 @@ public class VaultEventCommand extends VaultEvent{
             forgeData.put(VAULT_NAME, new CompoundTag());
         }
         CompoundTag inventoryVaults = forgeData.getCompound(VAULT_NAME);
-        CompoundTag vaultData = filterVaultData(player);
+        CompoundTag playerVault = filterVaultData(player);
 
-        inventoryVaults.put(vaultKey, vaultData);
+        inventoryVaults.put(vaultKey, playerVault);
         LOGGER.info("5.1  End of saveVault");
     }
     

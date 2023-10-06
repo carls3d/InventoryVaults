@@ -26,6 +26,7 @@ import net.minecraft.nbt.TagType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -35,6 +36,8 @@ import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class VaultCommands extends CommandUtils implements IVaultData{
 
@@ -82,6 +85,32 @@ public class VaultCommands extends CommandUtils implements IVaultData{
                         listVaults(
                             context.getSource(), 
                             EntityArgument.getPlayer(context, "Player")))))
+        .then(
+            Commands.literal("updatenbt").executes(context -> {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                server.getCommands().performCommand(context.getSource(), "cosarmor updatenbt");
+                return 1;
+            }))
+        .then(
+            Commands.literal("_test1").executes(c -> {
+                CommandSourceStack source = c.getSource();
+                ServerPlayer player = source.getPlayerOrException();
+                CompoundTag playerNBT = player.serializeNBT();
+                try {
+                    CompoundTag cosArmor = playerNBT.getCompound("ForgeData.CosArmor");
+                    LOGGER.info("cosArmor: " + cosArmor);
+                } catch (Exception e) {
+                    sendFailure(source, "No CosArmor");
+                }
+                try {
+                    CompoundTag vaults = playerNBT.getCompound("ForgeData."+VAULT_NAME);
+                    LOGGER.info("vaults: " + vaults);
+                } catch (Exception e) {
+                    sendFailure(source, "No CosArmor");
+                }
+                return 1;
+            })
+        )
 
         // .then(
         //     Commands.literal("types").then(

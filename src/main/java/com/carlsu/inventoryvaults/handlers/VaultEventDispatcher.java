@@ -106,7 +106,7 @@ public final class VaultEventDispatcher implements IVaultData, CreativeDimension
         // Has not changed save     &&      has changed dimension -> false
         // Has not changed save     &&      has not changed dimension -> false
 
-        boolean validDimensionChange = activeKeyEqualsSaveKey && hasChangedSave && hasChangedDimension;
+        boolean validDimensionChange = hasChangedSave && hasChangedDimension && activeKeyEqualsSaveKey;
 
         return validDimensionChange;
     }

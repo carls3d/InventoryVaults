@@ -2,7 +2,6 @@ package com.carlsu.inventoryvaults.events;
 
 import com.carlsu.inventoryvaults.types.PlayerData;
 import com.carlsu.inventoryvaults.types.VaultType;
-import com.carlsu.inventoryvaults.util.IVaultData;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,7 +28,7 @@ public class VaultEventDimension extends VaultEvent{
         if (!forgeData.contains(VAULT_NAME)) {
             forgeData.put(VAULT_NAME, new CompoundTag());
         }
-        CompoundTag inventoryVaults = forgeData.getCompound(IVaultData.VAULT_NAME);
+        CompoundTag inventoryVaults = forgeData.getCompound(VAULT_NAME);
         CompoundTag playerVault = filterVaultData(player);
         
         // Set location from location before dimension change
