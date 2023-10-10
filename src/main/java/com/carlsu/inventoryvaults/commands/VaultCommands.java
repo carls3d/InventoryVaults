@@ -42,7 +42,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 public class VaultCommands extends CommandUtils implements IVaultData{
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        LiteralArgumentBuilder<CommandSourceStack> vaultCommands = Commands.literal("Vaults")
+        LiteralArgumentBuilder<CommandSourceStack> vaultCommands = Commands.literal("vaults")
             .requires(player -> player.hasPermission(2));
 
         
@@ -84,49 +84,8 @@ public class VaultCommands extends CommandUtils implements IVaultData{
                 Commands.argument("Player", EntityArgument.player()).executes(context -> 
                         listVaults(
                             context.getSource(), 
-                            EntityArgument.getPlayer(context, "Player")))))
-        .then(
-            Commands.literal("updatenbt").executes(context -> {
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                server.getCommands().performCommand(context.getSource(), "cosarmor updatenbt");
-                return 1;
-            }))
-        .then(
-            Commands.literal("_test1").executes(c -> {
-                CommandSourceStack source = c.getSource();
-                ServerPlayer player = source.getPlayerOrException();
-                CompoundTag playerNBT = player.serializeNBT();
-                try {
-                    CompoundTag cosArmor = playerNBT.getCompound("ForgeData.CosArmor");
-                    LOGGER.info("cosArmor: " + cosArmor);
-                } catch (Exception e) {
-                    sendFailure(source, "No CosArmor");
-                }
-                try {
-                    CompoundTag vaults = playerNBT.getCompound("ForgeData."+VAULT_NAME);
-                    LOGGER.info("vaults: " + vaults);
-                } catch (Exception e) {
-                    sendFailure(source, "No CosArmor");
-                }
-                return 1;
-            })
-        )
-
-        // .then(
-        //     Commands.literal("types").then(
-        //         Commands.argument("vaultKey", StringArgumentType.string()).executes(context -> {
-        //         Player player = context.getSource().getPlayerOrException();
-        //         String stringArg = StringArgumentType.getString(context, "vaultKey");
-        //         sendSuccess(context.getSource(), "VaultTypes:");
-        //         HashMap<String, Pair<Byte, TagType<?>>> tagTypes = VaultUtils.getTagTypes(player, stringArg);
-                
-        //         for (String key : tagTypes.keySet()) {
-        //             // Pair<Byte, TagType<?>> pair = tagTypes.get(key);
-        //             sendSuccess(context.getSource(), key + ": " + tagTypes.get(key).second.getPrettyName() + 
-        //             " -> " + tagTypes.get(key).second.getName() + " -> " + tagTypes.get(key).first);
-        //         }
-        //         return 1;})))
-                ;
+                            EntityArgument.getPlayer(context, "Player")))));
+                            
         dispatcher.register(vaultCommands);
     }
 

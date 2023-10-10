@@ -26,7 +26,7 @@ public class CreativeCommands extends CommandUtils implements CreativeDimension,
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 
-        LiteralArgumentBuilder<CommandSourceStack> creativeCommands = Commands.literal("Creative")
+        LiteralArgumentBuilder<CommandSourceStack> creativeCommands = Commands.literal("creative")
             .requires(player -> player.hasPermission(0));
         
         ArgumentBuilder<CommandSourceStack, ?> teleport_creative = 
@@ -48,10 +48,8 @@ public class CreativeCommands extends CommandUtils implements CreativeDimension,
             return player.getLevel().dimension().equals(CREATIVE_KEY);
         };
 
-        // creativeCommands.then(Commands.literal("teleport").then(teleport_creative));
-        // creativeCommands.then(Commands.literal("tp").then(teleport_creative));
         creativeCommands.then(Commands.literal("tp").requires(inCreativeDimension).then(teleport_creative));
-        // creativeCommands.then(Commands.literal("tp2").requires((player) -> {return player.getLevel().dimension().equals(CREATIVE_KEY);}).then(teleport_creative));
+        // creativeCommands.then(Commands.literal("teleport").requires(inCreativeDimension).then(teleport_creative));
 
 
 

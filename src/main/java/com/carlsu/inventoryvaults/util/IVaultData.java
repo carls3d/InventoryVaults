@@ -3,25 +3,23 @@ package com.carlsu.inventoryvaults.util;
 import com.carlsu.inventoryvaults.InventoryVaults;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
-import net.minecraft.nbt.CompoundTag;
+// import net.minecraft.nbt.CompoundTag;
 
 import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
+// import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 
 public interface IVaultData {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final String MODID = InventoryVaults.MODID;
+    public static final String VERSION = InventoryVaults.MOD_VERSION;
 
     public static final String VAULT_NAME = "InventoryVaults";
     public static final String ACTIVE_VAULT = "ActiveVaultKey";
     public static final String PREVIOUS_VAULT = "PreviousVaultKey";
     public static final String LOAD_ROTATION = "LoadRotation";
     public static final String DEFAULT_VAULT = "main";
-    public static final String VERSION = "1.0";
-   
-
     public static final Set<String> VAULT_FILTER = ImmutableSet.of (
             "Health",
             "foodLevel",
@@ -36,33 +34,31 @@ public interface IVaultData {
             "SelectedItemSlot",
             "EnderItems",
             "ForgeCaps",
-            // "ForgeData."+VAULT_NAME+"."+ACTIVE_VAULT,
             "Attributes",
             "abilities",
             "Dimension",
             "Pos",
             "Rotation"
-            // "Motion"
     );
 
 
-    public static CompoundTag parseArgument(String pathArgument) {
-        //  "ForgeData."+VAULT_NAME+"."+DEFAULT_VAULT -> "{ForgeData:{InventoryVaults:{main}}}
-        if (pathArgument.contains(".")) {
-            String[] strList = pathArgument.split("\\.");
-            ArrayUtils.reverse(strList);
-
-            CompoundTag compoundTag = new CompoundTag();
-            for (String path : strList) {
-                CompoundTag newCT = new CompoundTag();
-                CompoundTag tempCT = compoundTag.copy();
-                newCT.put(path, tempCT);
-                compoundTag = newCT;
-            }
-            return compoundTag;
-        }
-        else return new CompoundTag();
-    }
+    // public static CompoundTag parseArgument(CompoundTag data, String pathArgument) {
+    //     //  "ForgeData."+VAULT_NAME+"."+DEFAULT_VAULT -> "{ForgeData:{InventoryVaults:{main}}}
+    //     if (pathArgument.contains(".")) {
+    //         String[] strList = pathArgument.split("\\.");
+    //         ArrayUtils.reverse(strList);
+            
+    //         CompoundTag compoundTag = new CompoundTag();
+    //         for (String path : strList) {
+    //             CompoundTag newCT = new CompoundTag();
+    //             CompoundTag tempCT = compoundTag.copy();
+    //             newCT.put(path, tempCT);
+    //             compoundTag = newCT;
+    //         }
+    //         return compoundTag;
+    //     }
+    //     else return new CompoundTag();
+    // }
 //
 //    public Tag getNBTData(String command, CompoundTag root) {
 //        if (command.contains(".")) {
