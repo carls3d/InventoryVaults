@@ -3,23 +3,21 @@ package com.carlsu.inventoryvaults.compatibility;
 import java.util.Set;
 
 import com.carlsu.inventoryvaults.InventoryVaults;
+import com.carlsu.inventoryvaults.util.IVaultData;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
-public class CosArmor {
+public class CosArmor implements IVaultData {
     public static final String cosKey = "CosArmor";
-    public static final boolean cosArmorMod = InventoryVaults.cosArmorMod;
     public static final Set<String> supportedVersions = Set.of(
         "1.18.2-v3x"
         );
     
     public static void cosLoad(ServerPlayer player, CompoundTag playerVault) {
-        if (!cosArmorMod) return;
-        
+        if (!InventoryVaults.cosArmorMod) return;
         CompoundTag vaultCosArmor = playerVault.getCompound(cosKey);
         if (vaultCosArmor.isEmpty()) {
             commandClear(player);
@@ -31,8 +29,7 @@ public class CosArmor {
    
     
     public static CompoundTag injectCosArmor(ServerPlayer player, CompoundTag filteredData) {
-        if (!cosArmorMod) return filteredData;
-        
+        if (!InventoryVaults.cosArmorMod) return filteredData;
         CompoundTag forgeData = player.getPersistentData();
         if (forgeData.contains(cosKey)) {
             filteredData.put(cosKey, forgeData.getCompound(cosKey));
@@ -53,10 +50,9 @@ public class CosArmor {
     }
 
     public static void performCommand(ServerPlayer player, String command) {
-        if (!cosArmorMod) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (!InventoryVaults.cosArmorMod) return;
         CommandSourceStack source = player.createCommandSourceStack().withPermission(2);
-        server.getCommands().performCommand(source, command);
+        ServerLifecycleHooks.getCurrentServer().getCommands().performCommand(source, command);
     }
  
 

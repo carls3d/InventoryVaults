@@ -4,8 +4,8 @@ import com.carlsu.inventoryvaults.commands.CreativeCommands;
 import com.carlsu.inventoryvaults.commands.VaultCommands;
 
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 @EventBusSubscriber
 public class CommandRegistrationHandler {

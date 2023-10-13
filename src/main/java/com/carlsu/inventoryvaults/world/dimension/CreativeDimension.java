@@ -30,13 +30,5 @@ public interface CreativeDimension {
         listTag.add(DoubleTag.valueOf(0.5D));
         return listTag;
     }
-    String dimension = "overworld";
 
-    // "minecraft:overworld"
-
-    // public static void register() {
-    //     System.out.println(
-    //         "Registering " + CREATIVE_KEY.registry().toString() + ":" + CREATIVE_VAULT
-    //         );
-    // }
 }   

@@ -8,10 +8,12 @@ import javax.annotation.Nonnull;
 import com.carlsu.inventoryvaults.util.IVaultData;
 import com.carlsu.inventoryvaults.util.VaultUtils;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -21,7 +23,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class PlayerData implements IVaultData{
     // Keep track of player's current vault to prevent clashing events
-    @Nonnull private final UUID playerUUID;
+    private final UUID playerUUID;
     private String saveVaultKey;
     private String loadVaultKey;
     private String activeVaultKey;
@@ -29,24 +31,24 @@ public class PlayerData implements IVaultData{
     private ListTag lastPos;
     private ListTag lastRot;
     @Nonnull private ResourceKey<Level> currentDimension;
-    @Nonnull private ResourceKey<Level> lastDimension;
+    private ResourceKey<Level> lastDimension;
 
     public PlayerData (@Nonnull Player player, @Nonnull ResourceKey<Level> currentDimension) {
-        this.playerUUID = Objects.requireNonNull(player.getUUID(), "Player UUID cannot be null");
-        this.currentDimension = Objects.requireNonNull(currentDimension, "Current dimension cannot be null");
+        this.playerUUID = player.getUUID();
+        this.currentDimension = currentDimension;
         this.lastDimension = this.currentDimension;
         this.updateActiveVaultKey();
     }
 
     private PlayerData (
-            @Nonnull UUID playerUUID, 
+            UUID playerUUID, 
             String saveVaultKey, 
             String loadVaultKey, 
             String activeVaultKey, 
             String previousVaultKey, 
             ListTag lastPos, 
             ListTag lastRot, 
-            @Nonnull ResourceKey<Level> lastDimension, 
+            ResourceKey<Level> lastDimension, 
             @Nonnull ResourceKey<Level> currentDimension
             ) {
         this.playerUUID = playerUUID;
@@ -81,14 +83,15 @@ public class PlayerData implements IVaultData{
     }
     public String getSaveVaultKey() {
         this.saveVaultKey = VaultUtils.ifElseValidKey(saveVaultKey, saveVaultKey, getActiveVaultKey());
-        // return saveVaultKey == null ? getActiveVaultKey() : saveVaultKey;
+        // return saveVaultKey != null ? saveVaultKey : getActiveVaultKey();
         return this.saveVaultKey;
     }
     public String getLoadVaultKey() {
         return loadVaultKey;
     }
     public ServerPlayer getPlayer() {
-        return ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(playerUUID);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        return server.getPlayerList().getPlayer(playerUUID);
     }
     public String getActiveVaultKey() {
         if (!VaultUtils.validKey(activeVaultKey)) {
@@ -142,24 +145,36 @@ public class PlayerData implements IVaultData{
     }
 
     public void updateActiveVaultKey() {
-        String nbtActiveVaultKey = VaultUtils.getVaultsString(getPlayer(), ACTIVE_VAULT);
-        LOGGER.info("updateActiveVaultKey -> nbtActiveVaultKey: "+ nbtActiveVaultKey);
+        String nbtActiveVaultKey = VaultUtils.PlayerVaultData.getString(getPlayer(), ACTIVE_VAULT);
+        // LOGGER.info("updateActiveVaultKey -> nbtActiveVaultKey: "+ nbtActiveVaultKey);
         if (VaultUtils.validKey(nbtActiveVaultKey)) {
             this.activeVaultKey = nbtActiveVaultKey;
         } else {
-            LOGGER.info("updateActiveVaultKey -> nbtActiveVaultKey is null: '"+nbtActiveVaultKey+"', setting nbt to DEFAULT_VAULT");
-            VaultUtils.putStringInventoryVaults(getPlayer(), ACTIVE_VAULT, DEFAULT_VAULT);
+            // LOGGER.info("updateActiveVaultKey -> nbtActiveVaultKey is null: '"+nbtActiveVaultKey+"', setting nbt to DEFAULT_VAULT");
+            VaultUtils.PlayerVaultData.setString(getPlayer(), ACTIVE_VAULT, DEFAULT_VAULT);
             this.activeVaultKey = DEFAULT_VAULT;
         }
     }
+
     public void updatePreviousVaultKey() {
-        String nbtPreviousVaultKey = VaultUtils.getVaultsString(getPlayer(), PREVIOUS_VAULT);
+        String nbtPreviousVaultKey = VaultUtils.PlayerVaultData.getString(getPlayer(), PREVIOUS_VAULT);
         if (VaultUtils.validKey(nbtPreviousVaultKey)) {
             this.previousVaultKey = nbtPreviousVaultKey;
         }
     }
 
-
+    public CompoundTag getPreviousLocation() {
+        CompoundTag location = new CompoundTag();
+        location.putString("Dimension", this.lastDimension.location().toString());
+        location.put("Pos", this.lastPos);
+        location.put("Rotation", this.lastRot);
+        return location;
+    }
+    public void updateLocation(Player player) {
+        updateLastPos(player);
+        updateLastRot(player);
+        updateLastDimension();
+    }
     public void updateLastPos(Player player) {
         Vec3 pos = player.position();
         this.lastPos = new ListTag();

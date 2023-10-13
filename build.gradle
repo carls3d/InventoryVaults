@@ -22,7 +22,7 @@ archivesBaseName = "${mod_id}-forge"
 
 task copyMod(type: Copy) {
     from 'build/libs'
-    into 'C:/Users/Carl/AppData/Roaming/com.modrinth.theseus/profiles/ModTest/mods'
+    into 'C:/Users/Carl/AppData/Roaming/com.modrinth.theseus/profiles/ModTestServer/mods'
     include 'inventoryvaults-forge-' + "${mod_version}" + '.jar'
 }
 
@@ -92,7 +92,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.18.2-40.2.0'
+    minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
 }
 
 jar {

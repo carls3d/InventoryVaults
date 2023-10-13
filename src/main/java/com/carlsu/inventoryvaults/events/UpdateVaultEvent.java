@@ -15,7 +15,6 @@ public class UpdateVaultEvent extends Event {
     private final VaultType EVENT_TYPE;
     private final String saveVaultKey;
     private final String loadVaultKey;
-    // private final Boolean wasTeleported;
 
     public UpdateVaultEvent(PlayerData playerData, VaultType eventType) {
         this.playerData = playerData;

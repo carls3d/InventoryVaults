@@ -2,9 +2,11 @@ package com.carlsu.inventoryvaults.events;
 
 import com.carlsu.inventoryvaults.types.PlayerData;
 import com.carlsu.inventoryvaults.types.VaultType;
+import com.carlsu.inventoryvaults.util.VaultUtils;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+
 
 public class VaultEventCommand extends VaultEvent{
 
@@ -12,22 +14,20 @@ public class VaultEventCommand extends VaultEvent{
         super(VaultType.MANUAL);
     }
 
+    @Override
+    protected boolean isValidEvent(PlayerData playerData) {
+        return !playerData.getSaveVaultKey().isEmpty();
+    }
 
     @Override
     protected void saveVault(PlayerData playerData) {
         ServerPlayer player = playerData.getPlayer();
         String vaultKey = playerData.getSaveVaultKey();
         
-        CompoundTag forgeData = player.getPersistentData();
-        if (!forgeData.contains(VAULT_NAME)) {
-            forgeData.put(VAULT_NAME, new CompoundTag());
-        }
-        CompoundTag inventoryVaults = forgeData.getCompound(VAULT_NAME);
         CompoundTag playerVault = filterVaultData(player);
-
-        inventoryVaults.put(vaultKey, playerVault);
-        LOGGER.info("5.1  End of saveVault");
+        VaultUtils.PlayerVaultData.setData(player, vaultKey, playerVault);
     }
+    
     
     @Override
     protected void loadVault(PlayerData playerData) {
@@ -37,18 +37,12 @@ public class VaultEventCommand extends VaultEvent{
         CompoundTag playerVault = getVault(player, vaultKey);
         ServerPlayer serverPlayer = (ServerPlayer) player;
         
-
-        clearInventoryOnEmptyVault(player, playerVault);
-
-        if (!validPlayerVaultLocation(serverPlayer, playerVault)) return;
-        
-        player.load(playerVault); /*Inventory, EnderItems, ForgeCaps, ForgeData, Attributes*/
+        player.load(playerVault); /*Inventory, EnderItems, ForgeCaps, ForgeData, Attributes, etc..*/
 
         loadAdditionalData(serverPlayer, playerVault);
 
         teleportToLocation(serverPlayer, playerVault);
 
-        LOGGER.info("5.2  End of loadVault");
     }
 }
 

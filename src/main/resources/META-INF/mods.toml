@@ -17,14 +17,14 @@ Example: Separate inventory for creative world/mode
     mandatory=true
     versionRange="[40,)"
     ordering="NONE"
-    side="BOTH"
+    side="SERVER"
 
 [[dependencies.inventoryvaults]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.18.2,)"
+    versionRange="[1.18.2]"
     ordering="NONE"
-    side="BOTH"
+    side="SERVER"
 
 [[dependencies.inventoryvaults]]
     modId="cosmeticarmorreworked"

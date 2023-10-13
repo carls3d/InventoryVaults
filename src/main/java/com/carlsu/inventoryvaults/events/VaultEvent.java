@@ -26,36 +26,45 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         this.eventType = eventType;
     }
 
+    protected abstract boolean isValidEvent(PlayerData playerData);
+
+    protected abstract void saveVault(PlayerData playerData);
+
+    protected abstract void loadVault(PlayerData playerData);
+    
+    
     public final void execute(PlayerData playerData) {
+        if (!isValidEvent(playerData)) return;
+
+        // LOGGER.info(" Executing VaultEvent " + eventType);
         ServerPlayer player = playerData.getPlayer();
         String saveVaultKey = playerData.getSaveVaultKey();
         String loadVaultKey = playerData.getLoadVaultKey();
         String activeVaultKey = playerData.getActiveVaultKey();
-        String previousVaultKey = playerData.getPreviousVaultKey();
-        LOGGER.info("5.1  previousVaultKey: " + previousVaultKey);
+        // String previousVaultKey = playerData.getPreviousVaultKey();
+        
         if (!VaultUtils.validKey(saveVaultKey)) {
             if (VaultUtils.validKey(activeVaultKey)) {
                 saveVaultKey = activeVaultKey;
             } else {
-                LOGGER.error("VaultEvent.execute -> saveVaultKey is null, aborting"); 
+                LOGGER.error("VaultEvent('" + eventType + "').execute -> saveVaultKey is null, aborting"); 
                 return;}
         }
         
-        LOGGER.info("5.1  VaultEvent.saveVault: " + saveVaultKey);
         saveVault(playerData);
-        VaultUtils.putStringInventoryVaults(player, ACTIVE_VAULT, saveVaultKey);
-        
+        VaultUtils.PlayerVaultData.setString(player, ACTIVE_VAULT, saveVaultKey);
+        VaultUtils.PlayerVaultData.get(player);
         
         if (!VaultUtils.validKey(loadVaultKey)) {
-            LOGGER.error("5.2  VaultEvent.execute -> loadVaultKey is null, aborting");
+            LOGGER.error("! VaultEvent('" + eventType + "').execute: -> loadVaultKey is null, aborting");
             return;
         }
         
+        VaultUtils.PlayerVaultData.setString(player, PREVIOUS_VAULT, saveVaultKey);
+        VaultUtils.PlayerVaultData.setString(player, ACTIVE_VAULT, loadVaultKey);
         
-        LOGGER.info("5.2  VaultEvent.loadVault: " + loadVaultKey);
-        VaultUtils.putStringInventoryVaults(player, PREVIOUS_VAULT, saveVaultKey);
-        VaultUtils.putStringInventoryVaults(player, ACTIVE_VAULT, loadVaultKey);
-        
+        clearInventoryOnEmptyLoadVault(playerData);
+        if (!validPlayerVaultLocation(playerData)) return;
         loadVault(playerData);
 
         // if current dimension is creative, set creative mode
@@ -67,23 +76,21 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
     }
 
 
-    protected abstract void saveVault(PlayerData playerData);
-    protected abstract void loadVault(PlayerData playerData);
-    
-
     // Check if location data is valid
-    public static boolean validPlayerVaultLocation(ServerPlayer player, CompoundTag playerVault){
+    public static boolean validPlayerVaultLocation(PlayerData playerData) {
+        ServerPlayer player = playerData.getPlayer();
+        CompoundTag playerVault = getVault(player, playerData.getLoadVaultKey());
         String vaultDimension = playerVault.getString("Dimension");
         ListTag vaultPosition = playerVault.getList("Pos", 6);
         ResourceKey<Level> vaultDimensionKey = VaultUtils.getResourceKey(vaultDimension);
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 
         if (vaultPosition.size() != 3) {
-            LOGGER.error("5.2  ! loadVault -> Invalid position: Pos: " + vaultPosition);
+            LOGGER.error("! loadVault -> Invalid position: Pos: " + vaultPosition);
             return false;
         }
         if (!server.levelKeys().contains(vaultDimensionKey)) {
-            LOGGER.error("5.2  ! loadVault -> Invalid dimension: Dimension: " + vaultDimension);
+            LOGGER.error("! loadVault -> Invalid dimension: Dimension: " + vaultDimension);
             return false;
         }
         return true;
@@ -93,7 +100,7 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
     // Returns vault data if it exists
     public static CompoundTag getVault(ServerPlayer player, String vaultKey) {
 
-        CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(player);
+        CompoundTag inventoryVaults = VaultUtils.PlayerVaultData.get(player);
 
         // Create empty vault if it doesn't exist
         if (!inventoryVaults.contains(vaultKey)) {
@@ -105,14 +112,13 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
             return playerVault;
         }
         
-        ListTag playerRot = player.serializeNBT().getList("Rotation", 5);
+        if (!inventoryVaults.contains(LOAD_ROTATION)) inventoryVaults.putBoolean(LOAD_ROTATION, true);
+        boolean loadRotation = inventoryVaults.getBoolean(LOAD_ROTATION);
         ListTag vaultRotation = playerVault.getList("Rotation", 5);
-
-        boolean loadRot = inventoryVaults.getBoolean(LOAD_ROTATION);
-        boolean rotEmpty = vaultRotation.isEmpty();
-
-        if (!loadRot || rotEmpty) {
-            playerVault.put("Rotation", playerRot);
+        
+        // If stored rotation is empty or "LoadRotation" is false, use current rotation
+        if (!loadRotation || vaultRotation.isEmpty()) {
+            playerVault.put("Rotation", player.serializeNBT().getList("Rotation", 5));
         }
 
         return playerVault;
@@ -124,12 +130,6 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
         String vaultDimension = playerVault.getString("Dimension");
         ListTag vaultPosition = playerVault.getList("Pos", 6);
         ListTag vaultRotation = playerVault.getList("Rotation", 5);
-        
-        CompoundTag inventoryVaults = VaultUtils.getInventoryVaults(serverPlayer);
-        if (!inventoryVaults.contains(LOAD_ROTATION)) {
-            inventoryVaults.putBoolean("loadRotation", true);
-        }
-        
         
         ServerLevel level = VaultUtils.getServerLevel(vaultDimension);
         if (level != null) {
@@ -150,8 +150,6 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
                     pitch = 0.0F;
                 }
             }
-            
-          
             serverPlayer.teleportTo(level, x, y, z, yaw, pitch);
         }
     }
@@ -189,7 +187,9 @@ public abstract class VaultEvent implements IVaultData, CreativeDimension {
     
 
 
-    public static void clearInventoryOnEmptyVault(ServerPlayer player, CompoundTag playerVault) {
+    public static void clearInventoryOnEmptyLoadVault(PlayerData playerData) {
+        ServerPlayer player = playerData.getPlayer();
+        CompoundTag playerVault = getVault(player, playerData.getLoadVaultKey());
         if (playerVault.isEmpty()) {
             player.getInventory().clearContent();
             CosArmor.commandClear(player);
